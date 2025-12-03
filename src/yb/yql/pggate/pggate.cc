@@ -90,6 +90,7 @@ using namespace std::literals;
 DECLARE_bool(use_node_to_node_encryption);
 DECLARE_string(certs_dir);
 DECLARE_bool(node_to_node_encryption_use_client_certificates);
+DECLARE_string(cert_node_filename);
 DECLARE_int32(backfill_index_client_rpc_timeout_ms);
 DECLARE_uint32(wait_for_ysql_backends_catalog_version_client_master_rpc_margin_ms);
 DECLARE_uint32(wait_for_ysql_backends_catalog_version_client_master_rpc_timeout_ms);
@@ -124,10 +125,16 @@ Result<PgApiImpl::MessengerHolder> BuildMessenger(
     const scoped_refptr<MetricEntity>& metric_entity,
     const std::shared_ptr<MemTracker>& parent_mem_tracker) {
   std::unique_ptr<rpc::SecureContext> secure_context;
+
   if (FLAGS_use_node_to_node_encryption) {
+
+	auto& node_name = FLAGS_pggate_cert_base_name;
+
     secure_context = VERIFY_RESULT(rpc::CreateSecureContext(
-        FLAGS_certs_dir,
-        rpc::UseClientCerts(FLAGS_node_to_node_encryption_use_client_certificates)));
+      FLAGS_certs_dir,
+      rpc::UseClientCerts(FLAGS_node_to_node_encryption_use_client_certificates),
+      node_name
+    ));
   }
   return PgApiImpl::MessengerHolder{
       std::move(secure_context),
